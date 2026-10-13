@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include "_sidebar.html" %}
+    <div class="main-content" id="mainContent">
+
+        <!-- Top Bar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="topbar-btn" id="mobileSidebarBtn" style="display:none">
+                    <i data-lucide="menu" style="width:18px;height:18px"></i>
+                </button>
+                <div>
+                    <div class="page-title">Dashboard</div>
+                    <div class="page-subtitle">Welcome back, <strong>{{ user.username }}</strong></div>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <span class="badge {% if bio_available %}green{% else %}amber{% endif %}">
+                    <i data-lucide="{% if bio_available %}shield-check{% else %}shield-alert{% endif %}"
+                        style="width:11px;height:11px"></i>
+                    {% if bio_available %}Biometrics Active{% else %}Mode 1 Active{% endif %}
+                </span>
+                <a href="{{ url_for('auth.logout') }}" class="topbar-btn">
+                    <i data-lucide="log-out" style="width:15px;height:15px"></i>
+                    Logout
+                </a>
+            </div>
+        </header>
+
+        <div class="page-body">
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card purple">
+                    <div class="stat-icon-bg purple">
+                        <i data-lucide="files" style="width:22px;height:22px"></i>
+                    </div>
+                    <div class="stat-value">{{ stats.total }}</div>
+                    <div class="stat-label">Total Operations</div>
+                </div>
+                <div class="stat-card cyan">
+                    <div class="stat-icon-bg cyan">
+                        <i data-lucide="lock" style="width:22px;height:22px"></i>
+                    </div>
+                    <div class="stat-value">{{ stats.encrypted }}</div>
+                    <div class="stat-label">Files Encrypted</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-icon-bg green">
+                        <i data-lucide="unlock" style="width:22px;height:22px"></i>
+                    </div>
+                    <div class="stat-value">{{ stats.decrypted }}</div>
+                    <div class="stat-label">Files Decrypted</div>
+                </div>
+                <div class="stat-card amber">
+                    <div class="stat-icon-bg amber">
+                        <i data-lucide="shield" style="width:22px;height:22px"></i>
+                    </div>
+                    <div class="stat-value" id="authModeLabel">{{ 'Mode ' ~ user.auth_mode }}</div>
+                    <div class="stat-label">Auth Mode</div>
+                </div>
+            </div>
+
+            <!-- Main Grid -->
+            <div style="display:grid; grid-template-columns: 1fr 340px; gap: 24px; align-items:start;">
+
+                <!-- Left Column -->
+                <div style="display:flex; flex-direction:column; gap:24px;">
+
+                    <!-- Quick Actions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i data-lucide="zap" style="width:18px;height:18px;color:var(--accent-purple)"></i>
+                                Quick Actions
+                            </div>
+                        </div>
+                        <div class="quick-actions">
+                            <a class="quick-action" href="{{ url_for('files.encrypt_page') }}">
+                                <div class="quick-action-icon" style="background:rgba(139,92,246,0.15);">
+                                    <i data-lucide="lock" style="width:24px;height:24px;color:#8b5cf6"></i>
+                                </div>
+                                <div class="quick-action-label">Encrypt File</div>
+                                <div class="quick-action-sub">AES-256-GCM</div>
+                            </a>
+                            <a class="quick-action" href="{{ url_for('files.decrypt_page') }}">
+                                <div class="quick-action-icon" style="background:rgba(34,211,238,0.15);">
+                                    <i data-lucide="unlock" style="width:24px;height:24px;color:#22d3ee"></i>
+                                </div>
+                                <div class="quick-action-label">Decrypt File</div>
+                                <div class="quick-action-sub">Verify & restore</div>
+                            </a>
+                            <a class="quick-action" href="{{ url_for('folders.folders_page') }}">
+                                <div class="quick-action-icon" style="background:rgba(16,185,129,0.15);">
+                                    <i data-lucide="folder-lock" style="width:24px;height:24px;color:#10b981"></i>
+                                </div>
+                                <div class="quick-action-label">Encrypt Folder</div>
+                                <div class="quick-action-sub">ZIP + encrypt</div>
+                            </a>
+                            <a class="quick-action" href="{{ url_for('folders.folders_page') }}">
+                                <div class="quick-action-icon" style="background:rgba(245,158,11,0.15);">
+                                    <i data-lucide="folder-open" style="width:24px;height:24px;color:#f59e0b"></i>
+                                </div>
+                                <div class="quick-action-label">Decrypt Folder</div>
+                                <div class="quick-action-sub">Restore archive</div>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i data-lucide="activity" style="width:18px;height:18px;color:var(--accent-purple)"></i>
+                                Recent Activity
+                            </div>
+                            <a href="{{ url_for('settings.settings_page') }}" class="btn btn-ghost btn-sm">View All</a>
+                        </div>
+
+                        {% if activity %}
+                        <div class="activity-list">
+                            {% for item in activity %}
+                            <div class="activity-item">
+                                <div class="activity-dot {{ item.status }}"></div>
+                                <div class="activity-info">
+                                    <div class="activity-action">{{ item.action | replace('_', ' ') | title }}</div>
+                                    {% if item.filename %}
+                                    <div class="activity-file">{{ item.filename }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="activity-time">{{ item.timestamp[:16] | replace('T', ' ') }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <div class="empty-icon"><i data-lucide="clock" style="width:28px;height:28px"></i></div>
+                            <div class="empty-title">No activity yet</div>
+                            <div class="empty-sub">Encrypt or decrypt a file to see activity here.</div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                </div><!-- End left column -->
+
+                <!-- Right Column — Security Status -->
+                <div style="display:flex; flex-direction:column; gap:24px;">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i data-lucide="shield-check"
+                                    style="width:18px;height:18px;color:var(--accent-purple)"></i>
+                                Security Status
+                            </div>
+                        </div>
+                        <div class="security-status">
+                            <div class="sec-item">
+                                <div class="sec-icon" style="background:rgba(16,185,129,0.1);">
+                                    <i data-lucide="lock" style="width:18px;height:18px;color:#10b981"></i>
+                                </div>
+                                <div>
+                                    <div class="sec-label">Encryption</div>
+                                    <div class="sec-value">AES-256-GCM</div>
+                                </div>
+                                <div class="sec-badge ok">Active</div>
+                            </div>
+
+                            <div class="sec-item">
+                                <div class="sec-icon" style="background:rgba(16,185,129,0.1);">
+                                    <i data-lucide="key" style="width:18px;height:18px;color:#10b981"></i>
+                                </div>
+                                <div>
+                                    <div class="sec-label">Key Derivation</div>
+                                    <div class="sec-value">scrypt N=2¹⁷</div>
+                                </div>
+                                <div class="sec-badge ok">Configured</div>
+                            </div>
+
+                            <div class="sec-item">
+                                <div class="sec-icon" style="background:rgba(16,185,129,0.1);">
+                                    <i data-lucide="user-check" style="width:18px;height:18px;color:#10b981"></i>
+                                </div>
+                                <div>
+                                    <div class="sec-label">Password Auth</div>
+                                    <div class="sec-value">bcrypt rounds=12</div>
+                                </div>
+                                <div class="sec-badge ok">Available</div>
+                            </div>
+
+                            <div class="sec-item">
+                                <div class="sec-icon" style="background:rgba(239,68,68,0.1);">
+                                    <i data-lucide="fingerprint"
+                                        style="width:18px;height:18px;color:{% if bio_available %}#10b981{% else %}#ef4444{% endif %}"></i>
+                                </div>
+                                <div>
+                                    <div class="sec-label">Biometrics</div>
+                                    <div class="sec-value">WebAuthn / FIDO2</div>
+                                </div>
+                                <div class="sec-badge {% if bio_available %}ok{% else %}off{% endif %}">
+                                    {% if bio_available %}Available{% else %}Unavailable{% endif %}
+                                </div>
+                            </div>
+
+                            <div class="sec-item">
+                                <div class="sec-icon" style="background:rgba(16,185,129,0.1);">
+                                    <i data-lucide="shield-alert" style="width:18px;height:18px;color:#10b981"></i>
+                                </div>
+                                <div>
+                                    <div class="sec-label">CSRF Protection</div>
+                                    <div class="sec-value">Flask-WTF</div>
+                                </div>
+                                <div class="sec-badge ok">Active</div>
+                            </div>
+                        </div>
+
+                        <div class="divider"></div>
+                        <a href="{{ url_for('settings.settings_page') }}" class="btn btn-secondary btn-full btn-sm">
+                            <i data-lucide="settings" style="width:14px;height:14px"></i>
+                            Security Settings
+                        </a>
+                    </div>
+
+                    <!-- Auth Mode Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i data-lucide="shield" style="width:18px;height:18px;color:var(--accent-purple)"></i>
+                                Auth Mode
+                            </div>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <div class="sec-item {% if user.auth_mode == 1 %}selected{% endif %}"
+                                style="border: 1px solid {% if user.auth_mode == 1 %}var(--accent-purple){% else %}var(--border-default){% endif %};">
+                                <div class="sec-icon" style="background:rgba(139,92,246,0.1);"><i data-lucide="key"
+                                        style="width:16px;height:16px;color:#8b5cf6"></i></div>
+                                <div>
+                                    <div class="sec-label">Mode 1: Password</div>
+                                    <div class="sec-value">Secret key only</div>
+                                </div>
+                                <div class="status-pill available"><span
+                                        style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>Available
+                                </div>
+                            </div>
+                            <div class="sec-item">
+                                <div class="sec-icon" style="background:rgba(245,158,11,0.1);"><i
+                                        data-lucide="fingerprint" style="width:16px;height:16px;color:#f59e0b"></i>
+                                </div>
+                                <div>
+                                    <div class="sec-label">Mode 2: Biometric</div>
+                                    <div class="sec-value">Fingerprint only</div>
+                                </div>
+                                <div class="status-pill unavailable"><span
+                                        style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>Unavailable
+                                </div>
+                            </div>
+                            <div class="sec-item">
+                                <div class="sec-icon" style="background:rgba(34,211,238,0.1);"><i data-lucide="layers"
+                                        style="width:16px;height:16px;color:#22d3ee"></i></div>
+                                <div>
+                                    <div class="sec-label">Mode 3: 2FA</div>
+                                    <div class="sec-value">Password + Biometric</div>
+                                </div>
+                                <div class="status-pill unavailable"><span
+                                        style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>Unavailable
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- End right column -->
+            </div><!-- End main grid -->
+        </div><!-- End page-body -->
+    </div><!-- End main-content -->
+</div><!-- End app-shell -->
+
+<style>
+    @media (max-width: 900px) {
+        .main-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
+</style>
+{% endblock %}

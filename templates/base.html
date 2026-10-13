@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}BioCrypt{% endblock %} — Secure File Encryption</title>
+  <meta name="description"
+    content="BioCrypt — AES-256-GCM file and folder encryption with multi-factor authentication.">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <!-- Lucide Icons (self-contained, no external CDN required for core icons) -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  {% block head %}{% endblock %}
+</head>
+
+<body>
+  <div class="bg-grid"></div>
+
+  {% block body %}{% endblock %}
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Lucide init + global JS -->
+  <script>
+    // Initialise Lucide icons
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    // -------------------------------------------------------
+    // Toast Notification System
+    // -------------------------------------------------------
+    const Toast = {
+      show(type, title, message, duration = 5000) {
+        const icons = {
+          success: '<i data-lucide="check-circle-2"></i>',
+          error: '<i data-lucide="x-circle"></i>',
+          info: '<i data-lucide="info"></i>',
+          warning: '<i data-lucide="alert-triangle"></i>',
+        };
+        const colors = { success: '#10b981', error: '#ef4444', info: '#3b82f6', warning: '#f59e0b' };
+        const container = document.getElementById('toastContainer');
+        const el = document.createElement('div');
+        el.className = `toast ${type}`;
+        el.innerHTML = `
+        <div class="toast-icon" style="color:${colors[type]}">${icons[type]}</div>
+        <div class="toast-body">
+          <div class="toast-title">${title}</div>
+          ${message ? `<div class="toast-msg">${message}</div>` : ''}
+        </div>
+        <div class="toast-close"><i data-lucide="x" style="width:16px;height:16px"></i></div>
+      `;
+        container.appendChild(el);
+        lucide.createIcons({ nodes: [el] });
+
+        const close = () => {
+          el.classList.add('hiding');
+          setTimeout(() => el.remove(), 300);
+        };
+        el.querySelector('.toast-close').addEventListener('click', close);
+        if (duration > 0) setTimeout(close, duration);
+        return el;
+      },
+      success(title, msg) { return this.show('success', title, msg); },
+      error(title, msg) { return this.show('error', title, msg); },
+      info(title, msg) { return this.show('info', title, msg); },
+      warning(title, msg) { return this.show('warning', title, msg); },
+    };
+
+    // -------------------------------------------------------
+    // Sidebar collapse
+    // -------------------------------------------------------
+    function initSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const toggle = document.getElementById('sidebarToggle');
+      if (!sidebar || !toggle) return;
+
+      const stored = localStorage.getItem('sidebarCollapsed');
+      if (stored === 'true') sidebar.classList.add('collapsed');
+
+      toggle.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+      });
+
+      // Mobile overlay
+      const mobileBtn = document.getElementById('mobileSidebarBtn');
+      if (mobileBtn) {
+        mobileBtn.addEventListener('click', () => sidebar.classList.toggle('mobile-open'));
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initSidebar();
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
+
+    // -------------------------------------------------------
+    // Flash messages → toasts
+    // -------------------------------------------------------
+    {% with messages = get_flashed_messages(with_categories = true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    Toast.show('{{ category }}', '{{ category|capitalize }}', `{{ message|e }}`);
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+< !--stray array start removed-- >
+< !--stray array processing removed-- >
+< !--stray endif removed-- >
+< !--stray endwith removed-- >
+  </script>
+
+  {% block scripts %}{% endblock %}
+</body>
+
+</html>

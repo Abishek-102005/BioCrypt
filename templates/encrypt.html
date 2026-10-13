@@ -1,0 +1,469 @@
+{% extends "base.html" %}
+{% block title %}Encrypt File{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include "_sidebar.html" %}
+    <div class="main-content">
+
+        <header class="topbar">
+            <div class="topbar-left">
+                <div>
+                    <div class="page-title">Encrypt File</div>
+                    <div class="page-subtitle">AES-256-GCM — PDF · Word · PowerPoint</div>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <a href="{{ url_for('files.decrypt_page') }}" class="topbar-btn">
+                    <i data-lucide="unlock" style="width:15px;height:15px"></i>
+                    Switch to Decrypt
+                </a>
+            </div>
+        </header>
+
+        <div class="page-body">
+            <div style="max-width: 700px; margin: 0 auto; display:flex; flex-direction:column; gap:24px;">
+
+                <!-- ── Encryption Mode ── -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i data-lucide="shield" style="width:16px;height:16px;color:var(--accent-purple)"></i>
+                            Encryption Mode
+                        </div>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 4px 4px;">
+
+                        <!-- Own Encryption -->
+                        <div class="enc-mode-card selected" id="ownModeCard" onclick="selectEncMode('own')">
+                            <div class="enc-mode-icon" style="background:rgba(139,92,246,.15);color:#a78bfa;">
+                                <i data-lucide="key-round" style="width:22px;height:22px"></i>
+                            </div>
+                            <div class="enc-mode-title">Own Encryption</div>
+                            <div class="enc-mode-sub">You provide a custom password.<br>Keep it safe — it cannot be
+                                recovered.</div>
+                            <div class="status-pill available" style="margin-top:8px;">
+                                <span
+                                    style="width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block"></span>
+                                Custom Key
+                            </div>
+                        </div>
+
+                        <!-- Default Encryption -->
+                        <div class="enc-mode-card" id="defaultModeCard" onclick="selectEncMode('default')">
+                            <div class="enc-mode-icon" style="background:rgba(6,182,212,.15);color:#22d3ee;">
+                                <i data-lucide="sparkles" style="width:22px;height:22px"></i>
+                            </div>
+                            <div class="enc-mode-title">Default Encryption</div>
+                            <div class="enc-mode-sub">A strong key is auto-generated for you.<br>Copy it before
+                                encrypting.</div>
+                            <div class="status-pill"
+                                style="margin-top:8px;background:rgba(6,182,212,.12);color:#22d3ee;border-color:rgba(6,182,212,.3);">
+                                <span
+                                    style="width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block"></span>
+                                Auto Key
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ── File Upload ── -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i data-lucide="upload" style="width:16px;height:16px;color:var(--accent-purple)"></i>
+                            Select Document
+                        </div>
+                        <span class="badge purple">PDF · Word · PPT</span>
+                    </div>
+
+                    <!-- Supported-type chips -->
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+                        <span class="type-chip pdf"><i data-lucide="file-text" style="width:12px;height:12px"></i>
+                            PDF</span>
+                        <span class="type-chip word"><i data-lucide="file-type" style="width:12px;height:12px"></i> DOC
+                            / DOCX</span>
+                        <span class="type-chip ppt"><i data-lucide="presentation" style="width:12px;height:12px"></i>
+                            PPT / PPTX</span>
+                    </div>
+
+                    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                        <div class="drop-icon"><i data-lucide="upload-cloud" style="width:28px;height:28px"></i></div>
+                        <div class="drop-title" id="dropTitle">Drag &amp; drop your document here</div>
+                        <div class="drop-subtitle">or click to browse · PDF, Word, PowerPoint only</div>
+                        <input type="file" id="fileInput" class="drop-input" accept=".pdf,.doc,.docx,.ppt,.pptx"
+                            onchange="handleFile(this.files[0])">
+                    </div>
+
+                    <div class="file-info" id="fileInfo" style="display:none;">
+                        <div class="file-info-icon" id="fileTypeIcon">
+                            <i data-lucide="file" style="width:20px;height:20px"></i>
+                        </div>
+                        <div>
+                            <div class="file-info-name" id="fileName">—</div>
+                            <div class="file-info-size" id="fileSize">—</div>
+                        </div>
+                        <div class="file-info-remove" onclick="clearFile()">
+                            <i data-lucide="x" style="width:16px;height:16px"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Password Section ── -->
+                <div class="card" id="passwordSection">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i data-lucide="key" style="width:16px;height:16px;color:var(--accent-purple)"></i>
+                            <span id="pwSectionLabel">Your Encryption Password</span>
+                        </div>
+                    </div>
+
+                    <!-- Own password input -->
+                    <div id="ownPwPanel">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label" for="encPassword">Secret Key / Password</label>
+                            <div class="input-wrapper">
+                                <input type="password" id="encPassword" class="form-control"
+                                    placeholder="Enter a strong password for this file" autocomplete="new-password">
+                                <i data-lucide="eye" class="input-icon" id="encEyeIcon" style="width:16px;height:16px"
+                                    onclick="togglePw('encPassword','encEyeIcon')"></i>
+                            </div>
+                            <div class="strength-meter" style="margin-top:10px;">
+                                <div class="strength-bar-track">
+                                    <div class="strength-bar-fill" id="encStrengthBar"></div>
+                                </div>
+                                <span class="strength-label" id="encStrengthLabel">Enter a password</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Default / auto-generated key panel -->
+                    <div id="defaultPwPanel" style="display:none;">
+                        <div class="alert info" style="margin-bottom:14px;">
+                            <i data-lucide="info" style="width:16px;height:16px;flex-shrink:0;margin-top:2px;"></i>
+                            <span>A cryptographically strong key was generated. <strong>Copy it now</strong> — you will
+                                need it to decrypt your file.</span>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">Generated Key (auto)</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="autoKey" class="form-control"
+                                    style="font-family:monospace;letter-spacing:.05em;font-size:.85rem;" readonly>
+                                <i data-lucide="copy" class="input-icon" id="copyKeyIcon"
+                                    style="width:16px;height:16px;cursor:pointer;" onclick="copyKey()"
+                                    title="Copy key"></i>
+                            </div>
+                            <div style="margin-top:8px;display:flex;gap:8px;">
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="regenerateKey()">
+                                    <i data-lucide="refresh-cw" style="width:13px;height:13px"></i> Regenerate
+                                </button>
+                                <span id="copiedBadge"
+                                    style="display:none;align-items:center;gap:4px;color:#10b981;font-size:.8rem;">
+                                    <i data-lucide="check" style="width:13px;height:13px"></i> Copied!
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- ── Encrypt Button & Progress ── -->
+                <div class="card">
+                    <div class="progress-wrap" id="progressWrap" style="display:none;">
+                        <div class="progress-label">
+                            <span id="progressStatus">Encrypting…</span>
+                            <span id="progressPct"></span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill loading" id="progressBar"></div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary btn-full btn-lg" id="encryptBtn" onclick="doEncrypt()">
+                        <div class="btn-spinner" id="encSpinner"></div>
+                        <i data-lucide="lock" style="width:18px;height:18px" id="encBtnIcon"></i>
+                        <span class="btn-text">Encrypt Document</span>
+                    </button>
+
+                    <div class="alert info" style="margin-top:16px;">
+                        <i data-lucide="info" style="width:16px;height:16px;flex-shrink:0;margin-top:2px;"></i>
+                        <span>All encryption happens locally. Your file never leaves your machine. A
+                            <code>.biocrypt</code> file will be downloaded automatically.</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* ── Encryption mode cards ── */
+    .enc-mode-card {
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        padding: 18px 16px;
+        cursor: pointer;
+        transition: border-color .2s, box-shadow .2s, background .2s;
+        background: var(--bg-card);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    .enc-mode-card:hover {
+        border-color: var(--accent-purple);
+        background: rgba(139, 92, 246, .05);
+    }
+
+    .enc-mode-card.selected {
+        border-color: var(--accent-purple);
+        background: rgba(139, 92, 246, .08);
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, .15);
+    }
+
+    .enc-mode-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 4px;
+    }
+
+    .enc-mode-title {
+        font-weight: 700;
+        font-size: .95rem;
+        color: var(--text-primary);
+    }
+
+    .enc-mode-sub {
+        font-size: .78rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+    }
+
+    /* ── File type chips ── */
+    .type-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: .74rem;
+        font-weight: 600;
+        letter-spacing: .02em;
+    }
+
+    .type-chip.pdf {
+        background: rgba(239, 68, 68, .12);
+        color: #f87171;
+        border: 1px solid rgba(239, 68, 68, .25);
+    }
+
+    .type-chip.word {
+        background: rgba(59, 130, 246, .12);
+        color: #60a5fa;
+        border: 1px solid rgba(59, 130, 246, .25);
+    }
+
+    .type-chip.ppt {
+        background: rgba(249, 115, 22, .12);
+        color: #fb923c;
+        border: 1px solid rgba(249, 115, 22, .25);
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let selectedFile = null;
+    let encMode = 'own'; // 'own' | 'default'
+
+    // ── Supported types ──
+    const ALLOWED_EXTS = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
+    const EXT_ICONS = {
+        '.pdf': 'file-text',
+        '.doc': 'file-type', '.docx': 'file-type',
+        '.ppt': 'presentation', '.pptx': 'presentation',
+    };
+
+    // ── Drag & drop ──
+    const dz = document.getElementById('dropZone');
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+    dz.addEventListener('drop', e => {
+        e.preventDefault();
+        dz.classList.remove('drag-over');
+        if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    });
+
+    function getExt(name) { return name.slice(name.lastIndexOf('.')).toLowerCase(); }
+
+    function handleFile(file) {
+        if (!file) return;
+        const ext = getExt(file.name);
+        if (!ALLOWED_EXTS.includes(ext)) {
+            Toast.error('Unsupported File', 'Please upload a PDF, Word (.doc/.docx) or PowerPoint (.ppt/.pptx) document.');
+            return;
+        }
+        if (file.size > 50 * 1024 * 1024) {
+            Toast.error('File Too Large', 'Maximum file size is 50 MB.');
+            return;
+        }
+        selectedFile = file;
+        document.getElementById('dropTitle').textContent = file.name;
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileSize').textContent = formatSize(file.size);
+        // Set type icon
+        const iconName = EXT_ICONS[ext] || 'file';
+        const iconEl = document.querySelector('#fileTypeIcon i');
+        iconEl.setAttribute('data-lucide', iconName);
+        lucide.createIcons({ nodes: [iconEl.parentElement] });
+        document.getElementById('fileInfo').style.display = 'flex';
+        dz.classList.add('has-file');
+    }
+
+    function clearFile() {
+        selectedFile = null;
+        document.getElementById('fileInput').value = '';
+        document.getElementById('dropTitle').textContent = 'Drag & drop your document here';
+        document.getElementById('fileInfo').style.display = 'none';
+        dz.classList.remove('has-file');
+    }
+
+    function formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    // ── Encryption mode ──
+    function selectEncMode(mode) {
+        encMode = mode;
+        document.getElementById('ownModeCard').classList.toggle('selected', mode === 'own');
+        document.getElementById('defaultModeCard').classList.toggle('selected', mode === 'default');
+        document.getElementById('ownPwPanel').style.display = mode === 'own' ? '' : 'none';
+        document.getElementById('defaultPwPanel').style.display = mode === 'default' ? '' : 'none';
+        if (mode === 'default' && !document.getElementById('autoKey').value) regenerateKey();
+    }
+
+    // ── Auto key generation ──
+    function generateStrongKey(len = 32) {
+        const arr = new Uint8Array(len);
+        crypto.getRandomValues(arr);
+        return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function regenerateKey() {
+        document.getElementById('autoKey').value = generateStrongKey();
+        document.getElementById('copiedBadge').style.display = 'none';
+    }
+
+    function copyKey() {
+        const key = document.getElementById('autoKey').value;
+        navigator.clipboard.writeText(key).then(() => {
+            const badge = document.getElementById('copiedBadge');
+            badge.style.display = 'flex';
+            setTimeout(() => badge.style.display = 'none', 2500);
+        });
+    }
+
+    // ── Password strength ──
+    function togglePw(id, iconId) {
+        const inp = document.getElementById(id);
+        const icon = document.getElementById(iconId);
+        inp.type = inp.type === 'password' ? 'text' : 'password';
+        icon.setAttribute('data-lucide', inp.type === 'password' ? 'eye' : 'eye-off');
+        lucide.createIcons({ nodes: [icon.parentElement] });
+    }
+
+    let strengthDebounce;
+    document.getElementById('encPassword').addEventListener('input', function () {
+        clearTimeout(strengthDebounce);
+        strengthDebounce = setTimeout(() => updateStrength(this.value), 200);
+    });
+
+    async function updateStrength(pw) {
+        const bar = document.getElementById('encStrengthBar');
+        const label = document.getElementById('encStrengthLabel');
+        if (!pw) { bar.style.width = '0%'; label.textContent = 'Enter a password'; return; }
+        try {
+            const res = await fetch('/api/password-strength', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: pw })
+            });
+            const d = await res.json();
+            const colors = ['#ef4444', '#f97316', '#f59e0b', '#10b981', '#10b981'];
+            const widths = ['20%', '40%', '60%', '80%', '100%'];
+            bar.style.cssText = `width:${widths[d.score]};background:${colors[d.score]}`;
+            label.textContent = d.label + (d.hints[0] ? ' — ' + d.hints[0] : '');
+            label.style.color = colors[d.score];
+        } catch (e) { }
+    }
+
+    // ── Encrypt ──
+    async function doEncrypt() {
+        if (!selectedFile) { Toast.warning('No File', 'Please select a document to encrypt.'); return; }
+
+        let password;
+        if (encMode === 'own') {
+            password = document.getElementById('encPassword').value;
+            if (!password) { Toast.warning('No Password', 'Please enter your encryption password.'); return; }
+        } else {
+            password = document.getElementById('autoKey').value;
+            if (!password) { Toast.warning('No Key', 'Please generate a key first.'); return; }
+            // Remind user to copy
+            const badge = document.getElementById('copiedBadge');
+            if (badge.style.display === 'none') {
+                const ok = confirm('Have you copied the generated key? You will need it to decrypt your file. Proceed?');
+                if (!ok) return;
+            }
+        }
+
+        const btn = document.getElementById('encryptBtn');
+        const wrap = document.getElementById('progressWrap');
+        btn.disabled = true;
+        btn.classList.add('loading');
+        wrap.style.display = 'block';
+        const bar = document.getElementById('progressBar');
+        bar.className = 'progress-fill loading';
+        document.getElementById('progressStatus').textContent = 'Encrypting…';
+
+        const fd = new FormData();
+        fd.append('file', selectedFile);
+        fd.append('password', password);
+
+        try {
+            const res = await fetch('/api/encrypt', { method: 'POST', body: fd });
+            if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Encryption failed.'); }
+
+            const blob = await res.blob();
+            const cd = res.headers.get('Content-Disposition') || '';
+            const match = cd.match(/filename="?([^"]+)"?/);
+            const fname = match ? match[1] : selectedFile.name + '.biocrypt';
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = fname; a.click();
+            URL.revokeObjectURL(url);
+
+            bar.className = 'progress-fill success';
+            bar.style.width = '100%';
+            document.getElementById('progressStatus').textContent = 'Encryption complete!';
+            Toast.success('Encrypted!', `${fname} downloaded.`);
+        } catch (e) {
+            bar.className = 'progress-fill error';
+            bar.style.width = '100%';
+            document.getElementById('progressStatus').textContent = 'Encryption failed.';
+            Toast.error('Encryption Failed', e.message);
+        } finally {
+            btn.disabled = false;
+            btn.classList.remove('loading');
+        }
+    }
+</script>
+{% endblock %}

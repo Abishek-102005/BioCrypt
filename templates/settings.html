@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+{% block title %}Security Settings{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include "_sidebar.html" %}
+    <div class="main-content">
+
+        <header class="topbar">
+            <div class="topbar-left">
+                <div>
+                    <div class="page-title">Security Settings</div>
+                    <div class="page-subtitle">Manage your account and preferences</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-body">
+            <div class="tab-bar" style="max-width:860px;">
+                <button class="tab-btn active" onclick="switchTab('password')">
+                    <i data-lucide="lock" style="width:14px;height:14px"></i> Password
+                </button>
+                <button class="tab-btn" onclick="switchTab('authmode')">
+                    <i data-lucide="shield" style="width:14px;height:14px"></i> Auth Mode
+                </button>
+                <button class="tab-btn" onclick="switchTab('biometric')">
+                    <i data-lucide="fingerprint" style="width:14px;height:14px"></i> Biometrics
+                </button>
+                <button class="tab-btn" onclick="switchTab('activity')">
+                    <i data-lucide="activity" style="width:14px;height:14px"></i> Activity Log
+                </button>
+            </div>
+
+            <!-- =========== Password Tab =========== -->
+            <div class="tab-content active" id="tab-password" style="max-width:540px;">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i data-lucide="key" style="width:16px;height:16px;color:var(--accent-purple)"></i>
+                            Change Password
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Current Password</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="currPw" class="form-control" placeholder="Current password">
+                            <i data-lucide="eye" class="input-icon" id="currEye" style="width:16px;height:16px"
+                                onclick="togglePw('currPw','currEye')"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">New Password</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="newPw" class="form-control"
+                                placeholder="New password (min 8 chars)" oninput="liveStrength(this.value)">
+                            <i data-lucide="eye" class="input-icon" id="newEye" style="width:16px;height:16px"
+                                onclick="togglePw('newPw','newEye')"></i>
+                        </div>
+                        <div class="strength-meter">
+                            <div class="strength-bar-track">
+                                <div class="strength-bar-fill" id="pwStrBar"></div>
+                            </div>
+                            <span class="strength-label" id="pwStrLabel">Enter a new password</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Confirm New Password</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="confPw" class="form-control" placeholder="Repeat new password">
+                            <i data-lucide="eye" class="input-icon" id="confEye" style="width:16px;height:16px"
+                                onclick="togglePw('confPw','confEye')"></i>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary btn-full" onclick="changePassword()">
+                        <div class="btn-spinner"></div>
+                        <i data-lucide="check" style="width:16px;height:16px"></i>
+                        <span class="btn-text">Update Password</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- =========== Auth Mode Tab =========== -->
+            <div class="tab-content" id="tab-authmode" style="max-width:640px;">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i data-lucide="shield" style="width:16px;height:16px;color:var(--accent-purple)"></i>
+                            Authentication Mode
+                        </div>
+                    </div>
+
+                    <div class="alert info" style="margin-bottom:20px;">
+                        <i data-lucide="info" style="width:16px;height:16px;flex-shrink:0;margin-top:2px;"></i>
+                        <span>Modes 2 and 3 require a FIDO2-capable hardware authenticator (Windows Hello, Touch ID,
+                            FIDO2 key) and a configured WebAuthn relying-party. They are currently
+                            <strong>unavailable</strong> on this system.</span>
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <div class="auth-mode-card {% if user.auth_mode == 1 %}selected{% endif %}" id="modeCard1"
+                            onclick="setAuthMode(1)">
+                            <div style="display:flex; align-items:center; gap:16px;">
+                                <div class="auth-mode-icon purple" style="margin:0;"><i data-lucide="key"
+                                        style="width:20px;height:20px"></i></div>
+                                <div style="flex:1; text-align:left;">
+                                    <div class="auth-mode-title" style="font-size:14px;">Mode 1 — Secret Key</div>
+                                    <div class="auth-mode-sub" style="font-size:12px;">Encrypt and decrypt using a
+                                        password only. Uses scrypt + AES-256-GCM.</div>
+                                </div>
+                                <div class="status-pill available">
+                                    <span
+                                        style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>
+                                    Available
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="auth-mode-card unavailable">
+                            <div style="display:flex; align-items:center; gap:16px;">
+                                <div class="auth-mode-icon cyan" style="margin:0;"><i data-lucide="fingerprint"
+                                        style="width:20px;height:20px"></i></div>
+                                <div style="flex:1; text-align:left;">
+                                    <div class="auth-mode-title" style="font-size:14px;">Mode 2 — Biometric</div>
+                                    <div class="auth-mode-sub" style="font-size:12px;">Requires a FIDO2 platform
+                                        authenticator. Not available — no hardware detected.</div>
+                                </div>
+                                <div class="status-pill unavailable">
+                                    <span
+                                        style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>
+                                    Unavailable
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="auth-mode-card unavailable">
+                            <div style="display:flex; align-items:center; gap:16px;">
+                                <div class="auth-mode-icon green" style="margin:0;"><i data-lucide="layers"
+                                        style="width:20px;height:20px"></i></div>
+                                <div style="flex:1; text-align:left;">
+                                    <div class="auth-mode-title" style="font-size:14px;">Mode 3 — Two-Factor (Key +
+                                        Biometric)</div>
+                                    <div class="auth-mode-sub" style="font-size:12px;">Both password and biometric must
+                                        succeed. Requires Mode 2 to be available first.</div>
+                                </div>
+                                <div class="status-pill unavailable">
+                                    <span
+                                        style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>
+                                    Unavailable
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- =========== Biometrics Tab =========== -->
+            <div class="tab-content" id="tab-biometric" style="max-width:580px;">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i data-lucide="fingerprint" style="width:16px;height:16px;color:var(--accent-purple)"></i>
+                            Biometric Authentication
+                        </div>
+                        <div class="status-pill unavailable" style="font-size:12px; padding: 4px 12px;">
+                            <span
+                                style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>
+                            Unavailable
+                        </div>
+                    </div>
+
+                    <div class="alert danger">
+                        <i data-lucide="alert-circle" style="width:16px;height:16px;flex-shrink:0;margin-top:2px;"></i>
+                        <div>
+                            <strong>Not Available on This System</strong><br>
+                            {{ bio_reason }}
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <div class="card-title" style="margin-bottom:12px; font-size:14px;">
+                        <i data-lucide="info" style="width:14px;height:14px;color:var(--accent-cyan)"></i>
+                        How to Enable Biometrics
+                    </div>
+                    <ol
+                        style="padding-left:20px; display:flex; flex-direction:column; gap:8px; font-size:13px; color:var(--text-secondary); line-height:1.6;">
+                        <li>Install <code>py_webauthn</code>: <span class="mono">pip install py_webauthn</span></li>
+                        <li>Configure <code>RP_ID</code> and <code>RP_NAME</code> in <code>config.py</code></li>
+                        <li>Ensure your system has a FIDO2 platform authenticator (Windows Hello / Touch ID / FIDO2 USB
+                            key)</li>
+                        <li>Register your biometric credential under Settings → Biometrics → Enroll</li>
+                    </ol>
+
+                    <div class="divider"></div>
+                    <button class="btn btn-ghost btn-full" disabled>
+                        <i data-lucide="fingerprint" style="width:16px;height:16px"></i>
+                        Enroll Biometric (Unavailable)
+                    </button>
+                </div>
+            </div>
+
+            <!-- =========== Activity Log Tab =========== -->
+            <div class="tab-content" id="tab-activity" style="max-width:760px;">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i data-lucide="clock" style="width:16px;height:16px;color:var(--accent-purple)"></i>
+                            Recent Security Events
+                        </div>
+                        <span class="badge purple">{{ activity | length }} events</span>
+                    </div>
+
+                    {% if activity %}
+                    <div class="activity-list">
+                        {% for item in activity %}
+                        <div class="activity-item">
+                            <div class="activity-dot {{ item.status }}"></div>
+                            <div class="activity-info">
+                                <div class="activity-action">{{ item.action | replace('_', ' ') | title }}</div>
+                                {% if item.filename %}
+                                <div class="activity-file">{{ item.filename }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="activity-time">{{ item.timestamp[:16] | replace('T', ' ') }}</div>
+                            <span class="badge {% if item.status == 'success' %}green{% else %}red{% endif %}"
+                                style="font-size:10px;">
+                                {{ item.status }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon"><i data-lucide="clock" style="width:28px;height:28px"></i></div>
+                        <div class="empty-title">No events recorded</div>
+                        <div class="empty-sub">Encrypt or decrypt files to see activity here.</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const tabs = ['password', 'authmode', 'biometric', 'activity'];
+
+    function switchTab(name) {
+        tabs.forEach(t => {
+            const btn = document.querySelector(`[onclick="switchTab('${t}')"]`);
+            const content = document.getElementById('tab-' + t);
+            if (btn) btn.classList.toggle('active', t === name);
+            if (content) content.classList.toggle('active', t === name);
+        });
+    }
+
+    function togglePw(id, icoId) {
+        const inp = document.getElementById(id);
+        const ico = document.getElementById(icoId);
+        inp.type = inp.type === 'password' ? 'text' : 'password';
+        ico.setAttribute('data-lucide', inp.type === 'password' ? 'eye' : 'eye-off');
+        lucide.createIcons({ nodes: [ico.parentElement] });
+    }
+
+    let strDebounce;
+    async function liveStrength(pw) {
+        clearTimeout(strDebounce);
+        strDebounce = setTimeout(async () => {
+            if (!pw) { document.getElementById('pwStrBar').style.width = '0%'; return; }
+            try {
+                const res = await fetch('/api/password-strength', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pw }) });
+                const d = await res.json();
+                const colors = ['#ef4444', '#f97316', '#f59e0b', '#10b981', '#10b981'];
+                const widths = ['20%', '40%', '60%', '80%', '100%'];
+                const bar = document.getElementById('pwStrBar');
+                bar.style.cssText = `width:${widths[d.score]};background:${colors[d.score]}`;
+                document.getElementById('pwStrLabel').textContent = d.label;
+                document.getElementById('pwStrLabel').style.color = colors[d.score];
+            } catch (e) { }
+        }, 200);
+    }
+
+    async function changePassword() {
+        const curr = document.getElementById('currPw').value;
+        const nw = document.getElementById('newPw').value;
+        const conf = document.getElementById('confPw').value;
+
+        if (!curr || !nw || !conf) { Toast.warning('Missing Fields', 'Please fill in all password fields.'); return; }
+
+        try {
+            const res = await fetch('/api/settings/change-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ current_password: curr, new_password: nw, confirm_password: conf }),
+            });
+            const data = await res.json();
+            if (!res.ok) { Toast.error('Error', data.error); return; }
+            Toast.success('Password Updated', data.message);
+            document.getElementById('currPw').value = '';
+            document.getElementById('newPw').value = '';
+            document.getElementById('confPw').value = '';
+            document.getElementById('pwStrBar').style.width = '0%';
+        } catch (e) {
+            Toast.error('Error', 'An unexpected error occurred.');
+        }
+    }
+
+    async function setAuthMode(mode) {
+        try {
+            const res = await fetch('/api/settings/auth-mode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode }),
+            });
+            const data = await res.json();
+            if (!res.ok) { Toast.error('Cannot Set Mode', data.error); return; }
+            document.querySelectorAll('.auth-mode-card:not(.unavailable)').forEach(c => c.classList.remove('selected'));
+            document.getElementById('modeCard' + mode)?.classList.add('selected');
+            Toast.success('Mode Updated', data.message);
+        } catch (e) {
+            Toast.error('Error', 'Failed to update auth mode.');
+        }
+    }
+</script>
+{% endblock %}

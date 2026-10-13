@@ -1,0 +1,59 @@
+<!-- BioCrypt Sidebar Partial -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-icon">
+            <i data-lucide="shield-check" style="width:18px;height:18px;color:white"></i>
+        </div>
+        <span class="logo-text">BioCrypt</span>
+    </div>
+    <div class="sidebar-toggle" id="sidebarToggle">
+        <i data-lucide="chevron-left" style="width:14px;height:14px"></i>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Overview</div>
+        <a href="{{ url_for('dashboard.dashboard') }}"
+            class="nav-item {% if request.endpoint == 'dashboard.dashboard' %}active{% endif %}">
+            <i data-lucide="layout-dashboard" class="nav-icon"></i>
+            <span class="nav-label">Dashboard</span>
+        </a>
+
+        <div class="nav-section-label">Encryption</div>
+        <a href="{{ url_for('files.encrypt_page') }}"
+            class="nav-item {% if request.endpoint == 'files.encrypt_page' %}active{% endif %}">
+            <i data-lucide="lock" class="nav-icon"></i>
+            <span class="nav-label">Encrypt File</span>
+        </a>
+        <a href="{{ url_for('files.decrypt_page') }}"
+            class="nav-item {% if request.endpoint == 'files.decrypt_page' %}active{% endif %}">
+            <i data-lucide="unlock" class="nav-icon"></i>
+            <span class="nav-label">Decrypt File</span>
+        </a>
+        <a href="{{ url_for('folders.folders_page') }}"
+            class="nav-item {% if request.endpoint == 'folders.folders_page' %}active{% endif %}">
+            <i data-lucide="folder-lock" class="nav-icon"></i>
+            <span class="nav-label">Folder Protection</span>
+        </a>
+
+        <div class="nav-section-label">Account</div>
+        <a href="{{ url_for('settings.settings_page') }}"
+            class="nav-item {% if request.endpoint == 'settings.settings_page' %}active{% endif %}">
+            <i data-lucide="settings" class="nav-icon"></i>
+            <span class="nav-label">Settings</span>
+        </a>
+        <a href="{{ url_for('auth.logout') }}" class="nav-item">
+            <i data-lucide="log-out" class="nav-icon"></i>
+            <span class="nav-label">Logout</span>
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="sidebar-user">
+            <div class="user-avatar">{{ session.username[0]|upper if session.username else 'U' }}</div>
+            <div class="sidebar-footer-text">
+                <div class="user-name">{{ session.username }}</div>
+                <div class="user-role">Mode 1 — Password</div>
+            </div>
+        </div>
+    </div>
+</aside>
