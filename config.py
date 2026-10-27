@@ -45,7 +45,10 @@ class Config:
     # -------------------------------------------------------------------
     # Database
     # -------------------------------------------------------------------
-    DATABASE = os.path.join(BASE_DIR, "biocrypt.db")
+    DATABASE = os.environ.get(
+    "BIOCRYPT_DATABASE",
+    os.path.join(BASE_DIR, "biocrypt.db")
+)
 
     # -------------------------------------------------------------------
     # CSRF (Flask-WTF)
