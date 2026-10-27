@@ -54,6 +54,12 @@
                     <i data-lucide="eye" class="input-icon" id="loginEyeIcon" style="width:16px;height:16px"
                         onclick="togglePw('loginPassword','loginEyeIcon')"></i>
                 </div>
+                <div style="text-align:right; margin-top:6px;">
+                    <a href="{{ url_for('auth.forgot_password') }}"
+                        style="font-size:12px; color:var(--accent-purple); text-decoration:none;">
+                        Forgot password?
+                    </a>
+                </div>
             </div>
 
             <button type="submit" class="btn btn-primary btn-full" style="margin-top:8px;">
@@ -67,6 +73,7 @@
                     style="color:var(--accent-purple);">Register</a>
             </p>
         </form>
+
 
         <!-- Register Form -->
         <form class="auth-form {% if tab=='register' %}active{% endif %}" id="registerForm" method="POST"

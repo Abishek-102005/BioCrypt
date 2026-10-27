@@ -10,7 +10,7 @@
             <div class="topbar-left">
                 <div>
                     <div class="page-title">Encrypt File</div>
-                    <div class="page-subtitle">AES-256-GCM — PDF · Word · PowerPoint</div>
+                    <div class="page-subtitle">AES-256-GCM — Any file type supported</div>
                 </div>
             </div>
             <div class="topbar-right">
@@ -36,9 +36,16 @@
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 4px 4px;">
 
                         <!-- Own Encryption -->
+                        <!-- Own Encryption -->
                         <div class="enc-mode-card selected" id="ownModeCard" onclick="selectEncMode('own')">
-                            <div class="enc-mode-icon" style="background:rgba(139,92,246,.15);color:#a78bfa;">
-                                <i data-lucide="key-round" style="width:22px;height:22px"></i>
+                            <div class="enc-mode-icon" style="background:rgba(139,92,246,.18);color:#a78bfa;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <circle cx="7.5" cy="15.5" r="5.5" />
+                                    <path d="m21 2-9.6 9.6" />
+                                    <path d="m15.5 7.5 3 3L22 7l-3-3" />
+                                </svg>
                             </div>
                             <div class="enc-mode-title">Own Encryption</div>
                             <div class="enc-mode-sub">You provide a custom password.<br>Keep it safe — it cannot be
@@ -52,8 +59,14 @@
 
                         <!-- Default Encryption -->
                         <div class="enc-mode-card" id="defaultModeCard" onclick="selectEncMode('default')">
-                            <div class="enc-mode-icon" style="background:rgba(6,182,212,.15);color:#22d3ee;">
-                                <i data-lucide="sparkles" style="width:22px;height:22px"></i>
+                            <div class="enc-mode-icon" style="background:rgba(6,182,212,.18);color:#22d3ee;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9" />
+                                    <path d="M20 3v4" />
+                                    <path d="M22 5h-4" />
+                                </svg>
                             </div>
                             <div class="enc-mode-title">Default Encryption</div>
                             <div class="enc-mode-sub">A strong key is auto-generated for you.<br>Copy it before
@@ -76,7 +89,7 @@
                             <i data-lucide="upload" style="width:16px;height:16px;color:var(--accent-purple)"></i>
                             Select Document
                         </div>
-                        <span class="badge purple">PDF · Word · PPT</span>
+                        <span class="badge purple">Any File Type</span>
                     </div>
 
                     <!-- Supported-type chips -->
@@ -85,16 +98,18 @@
                             PDF</span>
                         <span class="type-chip word"><i data-lucide="file-type" style="width:12px;height:12px"></i> DOC
                             / DOCX</span>
-                        <span class="type-chip ppt"><i data-lucide="presentation" style="width:12px;height:12px"></i>
-                            PPT / PPTX</span>
+                        <span class="type-chip ppt"><i data-lucide="image" style="width:12px;height:12px"></i>
+                            Images</span>
+                        <span class="type-chip"
+                            style="background:rgba(139,92,246,.12);color:#a78bfa;border:1px solid rgba(139,92,246,.25);"><i
+                                data-lucide="file" style="width:12px;height:12px"></i> Any File</span>
                     </div>
 
                     <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
                         <div class="drop-icon"><i data-lucide="upload-cloud" style="width:28px;height:28px"></i></div>
-                        <div class="drop-title" id="dropTitle">Drag &amp; drop your document here</div>
-                        <div class="drop-subtitle">or click to browse · PDF, Word, PowerPoint only</div>
-                        <input type="file" id="fileInput" class="drop-input" accept=".pdf,.doc,.docx,.ppt,.pptx"
-                            onchange="handleFile(this.files[0])">
+                        <div class="drop-title" id="dropTitle">Drag &amp; drop any file here</div>
+                        <div class="drop-subtitle">or click to browse · All file types supported · Max 50 MB</div>
+                        <input type="file" id="fileInput" class="drop-input" onchange="handleFile(this.files[0])">
                     </div>
 
                     <div class="file-info" id="fileInfo" style="display:none;">
@@ -284,12 +299,13 @@
     let selectedFile = null;
     let encMode = 'own'; // 'own' | 'default'
 
-    // ── Supported types ──
-    const ALLOWED_EXTS = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
+    // ── Supported types — all file types allowed ──
     const EXT_ICONS = {
         '.pdf': 'file-text',
         '.doc': 'file-type', '.docx': 'file-type',
         '.ppt': 'presentation', '.pptx': 'presentation',
+        '.png': 'image', '.jpg': 'image', '.jpeg': 'image', '.gif': 'image',
+        '.zip': 'archive', '.txt': 'file-text', '.mp4': 'video',
     };
 
     // ── Drag & drop ──
@@ -307,10 +323,6 @@
     function handleFile(file) {
         if (!file) return;
         const ext = getExt(file.name);
-        if (!ALLOWED_EXTS.includes(ext)) {
-            Toast.error('Unsupported File', 'Please upload a PDF, Word (.doc/.docx) or PowerPoint (.ppt/.pptx) document.');
-            return;
-        }
         if (file.size > 50 * 1024 * 1024) {
             Toast.error('File Too Large', 'Maximum file size is 50 MB.');
             return;
@@ -438,28 +450,38 @@
         fd.append('file', selectedFile);
         fd.append('password', password);
 
+        let downloadStarted = false;
         try {
             const res = await fetch('/api/encrypt', { method: 'POST', body: fd });
-            if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Encryption failed.'); }
+            if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Encryption failed.'); }
 
             const blob = await res.blob();
             const cd = res.headers.get('Content-Disposition') || '';
             const match = cd.match(/filename="?([^"]+)"?/);
             const fname = match ? match[1] : selectedFile.name + '.biocrypt';
+
+            // Trigger download safely
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url; a.download = fname; a.click();
-            URL.revokeObjectURL(url);
+            a.href = url;
+            a.download = fname;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 5000); // delay revoke so download completes
+            downloadStarted = true;
 
             bar.className = 'progress-fill success';
             bar.style.width = '100%';
             document.getElementById('progressStatus').textContent = 'Encryption complete!';
-            Toast.success('Encrypted!', `${fname} downloaded.`);
+            Toast.success('Encrypted!', fname + ' downloaded.');
         } catch (e) {
             bar.className = 'progress-fill error';
             bar.style.width = '100%';
-            document.getElementById('progressStatus').textContent = 'Encryption failed.';
-            Toast.error('Encryption Failed', e.message);
+            // Only show "Encryption failed" if the download never started
+            document.getElementById('progressStatus').textContent =
+                downloadStarted ? 'Encryption complete!' : 'Encryption failed.';
+            if (!downloadStarted) Toast.error('Encryption Failed', e.message);
         } finally {
             btn.disabled = false;
             btn.classList.remove('loading');

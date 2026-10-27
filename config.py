@@ -15,7 +15,16 @@ class Config:
     # -------------------------------------------------------------------
     # Flask core
     # -------------------------------------------------------------------
-    SECRET_KEY = os.environ.get("BIOCRYPT_SECRET_KEY") or secrets.token_hex(32)
+    _key_file = os.path.join(BASE_DIR, ".secret_key")
+    if os.environ.get("BIOCRYPT_SECRET_KEY"):
+        SECRET_KEY = os.environ["BIOCRYPT_SECRET_KEY"]
+    elif os.path.exists(_key_file):
+        with open(_key_file) as _f:
+            SECRET_KEY = _f.read().strip()
+    else:
+        SECRET_KEY = secrets.token_hex(32)
+        with open(_key_file, "w") as _f:
+            _f.write(SECRET_KEY)
     DEBUG = False
     TESTING = False
 

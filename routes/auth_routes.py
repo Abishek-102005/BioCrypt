@@ -2,6 +2,7 @@
 BioCrypt — Auth Routes  (login, register, logout)
 """
 import re
+import sqlite3
 from flask import (
     Blueprint, render_template, request, redirect,
     url_for, session, flash, jsonify,
@@ -84,7 +85,16 @@ def register():
             flash("Username already taken.", "error")
             return render_template("login.html", tab="register")
 
-        user_id = db.create_user(username, email, hash_password(password))
+        if db.get_user_by_email(email):
+            flash("An account with this email already exists.", "error")
+            return render_template("login.html", tab="register")
+
+        try:
+            user_id = db.create_user(username, email, hash_password(password))
+        except sqlite3.IntegrityError:
+            flash("Username or email already in use. Please try another.", "error")
+            return render_template("login.html", tab="register")
+
         session.permanent = True
         session["user_id"] = user_id
         session["username"] = username
@@ -102,6 +112,56 @@ def logout():
         db.log_activity(user_id, "logout")
     session.clear()
     return redirect(url_for("auth.index"))
+
+
+@auth_bp.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if "user_id" in session:
+        return redirect(url_for("dashboard.dashboard"))
+
+    step = request.args.get("step", "1")
+
+    if request.method == "POST":
+        step = request.form.get("step", "1")
+
+        # ── Step 1: verify username + email ─────────────────────────────
+        if step == "1":
+            username = request.form.get("username", "").strip()
+            email    = request.form.get("email", "").strip()
+
+            user = db.get_user_by_username(username)
+            if not user or user["email"].lower() != email.lower():
+                flash("No account found with that username and email.", "error")
+                return render_template("forgot_password.html", step="1")
+
+            # Store verified user id in session temporarily
+            session["reset_user_id"] = user["id"]
+            return render_template("forgot_password.html", step="2")
+
+        # ── Step 2: set new password ─────────────────────────────────────
+        elif step == "2":
+            reset_uid = session.get("reset_user_id")
+            if not reset_uid:
+                flash("Session expired. Please start again.", "error")
+                return render_template("forgot_password.html", step="1")
+
+            password = request.form.get("password", "")
+            confirm  = request.form.get("confirm_password", "")
+
+            if len(password) < 8:
+                flash("Password must be at least 8 characters.", "error")
+                return render_template("forgot_password.html", step="2")
+            if password != confirm:
+                flash("Passwords do not match.", "error")
+                return render_template("forgot_password.html", step="2")
+
+            db.update_password(reset_uid, hash_password(password))
+            db.log_activity(reset_uid, "password_reset")
+            session.pop("reset_user_id", None)
+            flash("Password reset successfully! Please sign in.", "success")
+            return redirect(url_for("auth.login"))
+
+    return render_template("forgot_password.html", step=step)
 
 
 @auth_bp.route("/api/password-strength", methods=["POST"])

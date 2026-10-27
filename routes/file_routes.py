@@ -23,6 +23,17 @@ def login_required(f):
     return decorated
 
 
+def api_login_required(f):
+    """For API endpoints — returns JSON 401 instead of redirecting."""
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if "user_id" not in session:
+            return jsonify({"error": "Session expired. Please log in again."}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+
 # ---------------------------------------------------------------------------
 # Encrypt
 # ---------------------------------------------------------------------------
@@ -34,7 +45,7 @@ def encrypt_page():
 
 
 @files_bp.route("/api/encrypt", methods=["POST"])
-@login_required
+@api_login_required
 def api_encrypt():
     if "file" not in request.files:
         return jsonify({"error": "No file provided."}), 400
@@ -61,8 +72,11 @@ def api_encrypt():
         db.log_activity(session["user_id"], "encrypt_file", f.filename, "error")
         return jsonify({"error": str(e)}), 400
     except Exception as e:
+        import traceback, sys
+        traceback.print_exc(file=sys.stderr)
         db.log_activity(session["user_id"], "encrypt_file", f.filename, "error")
-        return jsonify({"error": "Encryption failed. Please try again."}), 500
+        return jsonify({"error": f"Encryption error: {e}"}), 500
+
 
 
 # ---------------------------------------------------------------------------
@@ -76,7 +90,7 @@ def decrypt_page():
 
 
 @files_bp.route("/api/decrypt", methods=["POST"])
-@login_required
+@api_login_required
 def api_decrypt():
     if "file" not in request.files:
         return jsonify({"error": "No file provided."}), 400

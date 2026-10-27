@@ -77,6 +77,13 @@ def get_user_by_username(username: str):
         ).fetchone()
 
 
+def get_user_by_email(email: str):
+    with get_db() as db:
+        return db.execute(
+            "SELECT * FROM users WHERE email = ?", (email,)
+        ).fetchone()
+
+
 def get_user_by_id(user_id: int):
     with get_db() as db:
         return db.execute(
